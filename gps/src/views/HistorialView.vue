@@ -22,6 +22,16 @@
       </div>
     </div>
 
+    <div class="arribaBp">
+      <div class="hone2">
+        <h1>Historial</h1>
+      </div>
+      <div id="play-content">
+        <button @click="playRecording" class="play-button">Reproducir Historial</button>
+      </div>
+
+    </div>
+
     <div class="tituloo">
       <div class="hone">
         <h1>Historial de Dispositivo</h1>
@@ -43,30 +53,34 @@
           </router-link>
         </ul>
       </div>
-
-      <div class="hone2">
-        <h1>Historial</h1>
-      </div>
-
       <div id="map" class="map-container"></div>
     </div>
   </section>
 </template>
+
+
 <script setup>
 import { ref, onMounted } from 'vue';
 import Swal from 'sweetalert2';
+import L from 'leaflet'; // Importa Leaflet
 import gpsIcon from '@/assets/gps.png';
 
 let map;
+let polyline;
+let marker;
+let playbackInterval;
+const playbackSpeed = 1000; // Velocidad de reproducción en milisegundos
 
-// Función para inicializar Google Map
+// Inicializa el mapa
 function initMap() {
-  var colombia = { lat: 4.5709, lng: -74.2973 };
-  const mapOptions = {
-    center: colombia,
-    zoom: 6
-  };
-  map = new window.google.maps.Map(document.getElementById("map"), mapOptions);
+  const colombia = [4.5709, -74.2973]; // Latitud y longitud de Colombia
+  map = L.map('map').setView(colombia, 6);
+
+  // Cargar capa de mapa base
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 }
 
 // Función para mostrar alertas personalizadas
@@ -87,15 +101,15 @@ const showAlert = (name) => {
       preConfirm: () => {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
-      
-        if (!startDate || !endDate ) {
+
+        if (!startDate || !endDate) {
           Swal.showValidationMessage('Por favor ingrese todas las fechas');
         }
-        return { startDate, endDate,};
+        return { startDate, endDate, };
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        showHistory(result.value.startDate, result.value.startTime, result.value.endDate, result.value.endTime);
+        showHistory(result.value.startDate, result.value.endDate);
       }
     });
   } else {
@@ -110,44 +124,60 @@ const showAlert = (name) => {
 };
 
 // Función para mostrar historial de coordenadas en el mapa
-const showHistory = (startDate, startTime, endDate, endTime) => {
+const showHistory = (startDate, endDate) => {
   const coordenadas = [
-    { lat: 10.9878, lng: -74.7889 }, // Punto 1 (Barranquilla)
-    { lat: 10.9885, lng: -74.7895 }, // Punto 2
-    { lat: 10.9900, lng: -74.7900 }, // Punto 3
-    { lat: 10.9920, lng: -74.7910 }, // Punto 4
-    { lat: 10.9930, lng: -74.7920 }  // Punto 5
+    [10.9878, -74.7889], // Punto 1 (Barranquilla)
+    [10.9885, -74.7895], // Punto 2
+    [10.9900, -74.7900], // Punto 3
+    [10.9920, -74.7910], // Punto 4
+    [10.9930, -74.7920]  // Punto 5
   ];
 
+  // Limpiar cualquier polyline existente
+  if (polyline) {
+    map.removeLayer(polyline);
+  }
+
   // Dibujar polyline con las coordenadas
-  const polyline = new window.google.maps.Polyline({
-    path: coordenadas,
-    geodesic: true,
-    strokeColor: '#FF0000',
-    strokeOpacity: 1.0,
-    strokeWeight: 2
-  });
-  polyline.setMap(map);
+  polyline = L.polyline(coordenadas, { color: 'red' }).addTo(map);
 
   // Agregar marcador inicial con el icono de GPS
-  const gpsMarkerIco = {
-    url: gpsIcon,
-    scaledSize: new window.google.maps.Size(40, 40)
-  };
-  
-  const marker = new window.google.maps.Marker({
-    position: coordenadas[0],
-    map: map,
-    icon: gpsMarkerIco,
-    title: 'Inicio'
+  const gpsMarker = L.icon({
+    iconUrl: gpsIcon,
+    iconSize: [40, 40]
   });
 
+  marker = L.marker(coordenadas[0], { icon: gpsMarker }).addTo(map).bindPopup('Inicio');
+
   // Ajustar el mapa para mostrar el polyline completo
-  const bounds = new window.google.maps.LatLngBounds();
-  for (let i = 0; i < coordenadas.length; i++) {
-    bounds.extend(coordenadas[i]);
+  map.fitBounds(polyline.getBounds());
+
+  // Guardar las coordenadas para la reproducción
+  window.recordingCoords = coordenadas;
+};
+
+// Función para iniciar la reproducción del recorrido
+const playRecording = () => {
+  if (!window.recordingCoords) return;
+
+  let index = 0;
+
+  // Limpiar cualquier intervalo de reproducción existente
+  if (playbackInterval) {
+    clearInterval(playbackInterval);
   }
-  map.fitBounds(bounds);
+
+  // Reproducción de recorrido
+  playbackInterval = setInterval(() => {
+    if (index < window.recordingCoords.length) {
+      const coord = window.recordingCoords[index];
+      marker.setLatLng(coord);
+      map.setView(coord, map.getZoom()); // Opcional: Ajusta el zoom si es necesario
+      index++;
+    } else {
+      clearInterval(playbackInterval); // Detener cuando termine
+    }
+  }, playbackSpeed);
 };
 
 const dropdownOpen = ref(false);
@@ -176,26 +206,34 @@ function filterResults() {
 // Inicializar resultados filtrados al montar el componente
 onMounted(() => {
   filteredResults.value = devices.value;
-
-  // Cargar el script de Google Maps al iniciar el componente
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBljMgFeIGE-6n1LBVmNWai3Km4MC8_NEg&callback=initGoogleMaps`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
+  initMap(); // Inicializa el mapa Leaflet al montar el componente
 });
-
-// Función de callback para inicializar Google Maps
-window.initGoogleMaps = () => {
-  initMap();
-};
 </script>
-
 
 
 <style scoped>
 .map-container {
   height: 690px;
+  z-index: 1;
+}
+
+
+.play-button {
+  width: 17%;
+  position: absolute;
+  bottom: 80px;
+  padding: 10px 20px;
+  background-color: var(--body-color);
+  color: var(--text-color);
+  font-weight: 600;
+  margin-left: 30px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
 }
 
 .home {
@@ -206,6 +244,7 @@ window.initGoogleMaps = () => {
 .home .navar {
   background-color: var(--sidebar-color);
   border-bottom: 3px solid var(--body-color);
+  z-index: 2;
 }
 
 .home .navar,
@@ -227,11 +266,10 @@ window.initGoogleMaps = () => {
   height: 280px;
   position: absolute;
   top: 35%;
-  z-index: 1;
+  z-index: 2;
   border-radius: 10px;
   padding: 10px;
   overflow-y: auto;
-  /* Para permitir el desplazamiento si la lista es larga */
   border: 1px solid;
 }
 
@@ -250,8 +288,8 @@ window.initGoogleMaps = () => {
   background-color: var(--sidebar-color);
   height: 50px;
   position: absolute;
-  top: 25%;
-  z-index: 1;
+  top: 30%;
+  z-index: 2;
   border-radius: 10px;
   padding: 5px 15px;
   overflow-y: auto;

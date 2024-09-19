@@ -38,10 +38,9 @@
         <ul class="device-list">
           <router-link to="#" style="text-decoration: none;">
             <li @click="selectDevice(item)" v-for="item in filteredResults" :key="item.id">{{ item.name }}
-            <i class='bx bxs-car icon'></i>
-          </li>
+              <i class='bx bxs-car icon'></i>
+            </li>
           </router-link>
-          
         </ul>
 
         <button type="button" class="button" @click="deleteLastShape">
@@ -49,19 +48,21 @@
         </button>
       </div>
 
-      <div id="map" class="map-container"></div>
+      <div id="map"  class="map-container"></div>
     </div>
-  </section>  
+  </section>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import L from 'leaflet';
 import Swal from 'sweetalert2';
+import 'leaflet-draw';
+import 'leaflet-draw/dist/leaflet.draw.css';
 
-// Variables de estado
+
 const map = ref(null);
-const drawingManager = ref(null);
-const shapes = ref([]);
+const drawnItems = ref(null);
 const dropdownOpen = ref(false);
 const searchQuery = ref('');
 const devices = ref([
@@ -74,134 +75,96 @@ const filteredResults = ref([]);
 const selectedDevice = ref(null);
 const deviceShapes = ref({});
 
-// Función para alternar la visibilidad del dropdown
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value;
 }
 
-// Función que se ejecuta al montar el componente
 onMounted(() => {
   filteredResults.value = devices.value;
-
-  // Cargar el script de Google Maps con Drawing Library al iniciar
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBljMgFeIGE-6n1LBVmNWai3Km4MC8_NEg&libraries=drawing&callback=initGoogleMaps`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
+  initMap();
 });
 
-// Función de callback al inicializar Google Maps
-window.initGoogleMaps = () => {
-  initMap();
-};
-
-// Función para inicializar el mapa de Google
 const initMap = () => {
-  map.value = new window.google.maps.Map(document.getElementById('map'), {
-    center: { lat: 10.96854, lng: -74.78132 },
-    zoom: 12
-  });
+  map.value = L.map('map').setView([10.96854, -74.78132], 12);
 
-  // Configurar el DrawingManager para permitir dibujar formas en el mapa
-  drawingManager.value = new window.google.maps.drawing.DrawingManager({
-    drawingMode: null,
-    drawingControl: true,
-    drawingControlOptions: {
-      position: window.google.maps.ControlPosition.TOP_CENTER,
-      drawingModes: ['rectangle', 'circle', 'polyline']
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map.value);
+
+  drawnItems.value = new L.FeatureGroup();
+  map.value.addLayer(drawnItems.value);
+
+  const drawControl = new L.Control.Draw({
+    edit: {
+      featureGroup: drawnItems.value
+    },
+    draw: {
+      polygon: true,
+      polyline: true,
+      rectangle: true,
+      circle: true,
+      marker: false
     }
   });
-  drawingManager.value.setMap(map.value);
+  map.value.addControl(drawControl);
 
-  // Escuchar el evento de completado de dibujo de una forma
-  window.google.maps.event.addListener(drawingManager.value, 'overlaycomplete', (event) => {
+  map.value.on(L.Draw.Event.CREATED, (e) => {
+    const type = e.layerType;
+    const layer = e.layer;
+
     if (!selectedDevice.value) {
-      // Mostrar alerta si no se ha seleccionado un dispositivo
       Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
+        title: 'Error',
         text: 'Debe seleccionar un dispositivo antes de crear una geozona.',
+        icon: 'warning',
         confirmButtonText: 'Cerrar'
       });
-      event.overlay.setMap(null); // Eliminar la forma dibujada si no hay dispositivo seleccionado
       return;
     }
 
-    // Si se dibuja una forma válida (rectángulo, círculo o polilínea)
-    if (event.type === 'rectangle' || event.type === 'circle' || event.type === 'polyline') {
-      // Guardar la forma dibujada
-      const newShape = event.overlay;
-      newShape.type = event.type;
+    if (drawnItems.value) {
+      drawnItems.value.addLayer(layer);
+      storeShape(type, layer);
 
-      // Asociar la forma con el dispositivo seleccionado
-      if (!deviceShapes.value[selectedDevice.value.id]) {
-        deviceShapes.value[selectedDevice.value.id] = [];
-      }
-      deviceShapes.value[selectedDevice.value.id].push(newShape);
-
-      // Mostrar las coordenadas en la tabla
-      displayCoordinates(newShape.type, newShape);
-
-      // Limpiar el modo de dibujo después de completar
-      drawingManager.value.setDrawingMode(null);
+      Swal.fire({
+        title: 'Geozona Creada',
+        icon: 'success',
+        confirmButtonText: 'Cerrar',
+      });
+    } else {
+      console.error('drawnItems no está inicializado correctamente.');
     }
   });
 };
 
-// Función para mostrar las coordenadas de la forma dibujada
-const displayCoordinates = (type, shape) => {
-  const coordinatesTable = document.createElement('table');
-  coordinatesTable.classList.add('coordinates-table');
+const storeShape = (type, layer) => {
+  if (!selectedDevice.value || !deviceShapes.value[selectedDevice.value.id]) {
+    deviceShapes.value[selectedDevice.value.id] = [];
+  }
+  deviceShapes.value[selectedDevice.value.id].push({ type, layer });
 
-  // Crear encabezado de la tabla
-  const thead = coordinatesTable.createTHead();
-  const headerRow = thead.insertRow();
-  const typeHeaderCell = document.createElement('th');
-  typeHeaderCell.textContent = 'Tipo';
-  const coordinatesHeaderCell = document.createElement('th');
-  coordinatesHeaderCell.textContent = 'Coordenadas';
-  headerRow.appendChild(typeHeaderCell);
-  headerRow.appendChild(coordinatesHeaderCell);
+  displayCoordinates(type, layer);
+};
 
-  // Crear cuerpo de la tabla y añadir fila con datos de la forma
-  const tbody = coordinatesTable.createTBody();
-  const newRow = tbody.insertRow();
-  const typeCell = newRow.insertCell(0);
-  const coordinatesCell = newRow.insertCell(1);
+const displayCoordinates = (type, layer) => {
+  let coordinates = '';
 
-  typeCell.textContent = type;
-  coordinatesCell.textContent = getShapeCoordinates(shape);
+  if (type === 'rectangle') {
+    const bounds = layer.getBounds();
+    coordinates = `NE: ${bounds.getNorthEast()}, SW: ${bounds.getSouthWest()}`;
+  } else if (type === 'circle') {
+    coordinates = `Centro: ${layer.getLatLng()}, Radio: ${layer.getRadius()}`;
+  } else if (type === 'polyline' || type === 'polygon') {
+    coordinates = layer.getLatLngs().toString();
+  }
 
-  // Mostrar alerta con las coordenadas
   Swal.fire({
-    title: "Geozona Creada",
-    icon: "success",
+    title: 'Coordenadas de la Geozona',
+    text: coordinates,
     confirmButtonText: 'Cerrar',
   });
 };
 
-// Función para obtener las coordenadas de la forma dibujada
-const getShapeCoordinates = (shape) => {
-  let coordinates = '';
-
-  if (shape.type === 'rectangle') {
-    const bounds = shape.getBounds();
-    coordinates = 'NE: ' + bounds.getNorthEast().toString() + ', ' +
-      'SW: ' + bounds.getSouthWest().toString();
-  } else if (shape.type === 'circle') {
-    const center = shape.getCenter();
-    coordinates = 'Centro: ' + center.toString() + ', ' +
-      'Radio: ' + shape.getRadius().toString();
-  } else if (shape.type === 'polyline') {
-    const path = shape.getPath();
-    coordinates = path.getArray().toString();
-  }
-
-  return coordinates;
-};
-
-// Función para eliminar la última forma dibujada
 const deleteLastShape = () => {
   if (!selectedDevice.value || !deviceShapes.value[selectedDevice.value.id]) {
     Swal.fire({
@@ -222,9 +185,9 @@ const deleteLastShape = () => {
     return;
   }
 
-  const lastShape = shapesForDevice.pop(); // Elimina la última forma del array
+  const lastShape = shapesForDevice.pop().layer;
   if (lastShape) {
-    lastShape.setMap(null); // Eliminar la forma del mapa
+    map.value.removeLayer(lastShape);
     Swal.fire({
       icon: 'success',
       title: 'Geozona Eliminada',
@@ -233,99 +196,15 @@ const deleteLastShape = () => {
   }
 };
 
-// Función para seleccionar un dispositivo y mostrar la alerta correspondiente
 const selectDevice = (device) => {
-  // Ocultar las geozonas del dispositivo actualmente seleccionado
-  if (selectedDevice.value) {
-    hideDeviceShapes(selectedDevice.value.id);
-  }
-
-  // Actualizar el dispositivo seleccionado
   selectedDevice.value = device;
-  showAlert(device.name);
-  loadDeviceShapes(); // Cargar las formas asociadas al dispositivo seleccionado
-};
-
-// Función para ocultar las formas del dispositivo especificado
-const hideDeviceShapes = (deviceId) => {
-  if (!deviceShapes.value[deviceId]) {
-    return; // No hay formas asociadas a este dispositivo
-  }
-
-  // Recorre todas las formas del dispositivo y ocúltalas
-  deviceShapes.value[deviceId].forEach((shape) => {
-    shape.setMap(null); // Eliminar la forma del mapa sin borrarla del estado
-  });
-  
-  // Limpiar el array de formas visibles para este dispositivo
-  shapes.value = shapes.value.filter(shape => shape.deviceId !== deviceId);
-};
-
-// Función para cargar las formas asociadas al dispositivo seleccionado en el mapa
-const loadDeviceShapes = () => {
-  if (selectedDevice.value && deviceShapes.value[selectedDevice.value.id]) {
-    deviceShapes.value[selectedDevice.value.id].forEach((shape) => {
-      shape.setMap(map.value); // Mostrar las formas asociadas al dispositivo en el mapa
-      shapes.value.push(shape); // Añadir la forma al array de formas actuales
-    });
-  }
-};
-
-// Función para mostrar las coordenadas de todas las formas dibujadas para el dispositivo seleccionado
-const showCoordinates = () => {
-  const coordinatesTable = document.createElement('table');
-  coordinatesTable.classList.add('coordinates-table');
-
-  // Crear encabezado de la tabla
-  const thead = coordinatesTable.createTHead();
-  const headerRow = thead.insertRow();
-  const typeHeaderCell = document.createElement('th');
-  typeHeaderCell.textContent = 'Tipo';
-  const coordinatesHeaderCell = document.createElement('th');
-  coordinatesHeaderCell.textContent = 'Coordenadas';
-  headerRow.appendChild(typeHeaderCell);
-  headerRow.appendChild(coordinatesHeaderCell);
-
-  // Crear cuerpo de la tabla y añadir filas con datos de las formas dibujadas
-  const tbody = coordinatesTable.createTBody();
-  shapes.value.forEach((shape) => {
-    const newRow = tbody.insertRow();
-    const typeCell = newRow.insertCell(0);
-    const coordinatesCell = newRow.insertCell(1);
-
-    typeCell.textContent = shape.type;
-    coordinatesCell.textContent = getShapeCoordinates(shape);
-  });
-
-  // Mostrar alerta con las coordenadas de las formas dibujadas
-  Swal.fire({
-    title: `Coordenadas de la Geozona para ${selectedDevice.value.name}`,
-    html: coordinatesTable.outerHTML,
-    confirmButtonText: 'Cerrar',
-    width: '75%'
-  });
-};
-
-// Función para mostrar la alerta de selección de dispositivo
-const showAlert = (name) => {
   Swal.fire({
     title: 'Dispositivo Seleccionado',
-    text: name,
+    text: device.name,
     confirmButtonText: 'Crear Geozona',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    showDenyButton: true,
-    denyButtonText: 'Ver Coordenadas'
-  }).then((result) => {
-    if (result.isDenied) {
-      showCoordinates(); 
-    } else if (result.isDismissed) {
-      selectedDevice.value = null;
-    }
   });
 };
 
-// Función para filtrar resultados de dispositivos según la consulta de búsqueda
 function filterResults() {
   const query = searchQuery.value.toLowerCase();
   filteredResults.value = devices.value.filter(item =>
@@ -335,11 +214,11 @@ function filterResults() {
 </script>
 
 
-
 <style scoped>
 #map {
   height: 690px;
   width: 100%;
+  z-index: 1;
 }
 
 .coordinates-table {
@@ -371,6 +250,7 @@ function filterResults() {
 .home .subtitulo {
   position: relative;
   z-index: 2;
+
 }
 
 .home .navar {
@@ -395,20 +275,21 @@ function filterResults() {
 .tituloo {
   position: relative;
   z-index: 1;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .hone {
-  margin-left: 30px;
+  margin-right: 20px;
   width: 17%;
   background-color: var(--sidebar-color);
   height: 340px;
   position: absolute;
   top: 25%;
-  z-index: 1;
+  z-index: 10;
   border-radius: 10px;
   padding: 10px;
   overflow-y: auto;
-  /* Para permitir el desplazamiento si la lista es larga */
   border: 1px solid;
   overflow-x: hidden;
 }
