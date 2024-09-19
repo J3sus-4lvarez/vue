@@ -24,7 +24,7 @@
 
     <div class="crud">
       <div class="titu">
-        <h1><i class='bx bxs-report icoon'></i>Reportes</h1>
+        <h1><i class='bx bxs-report icoon'></i> Reportes</h1>
       </div>
 
       <div class="cruds">
@@ -37,15 +37,15 @@
 
             <div class="submenu">
               <div class="select">
-                <input type="text" readonly :value="selectedDevice || 'Seleccione un dispositivos'"
+                <input type="text" readonly :value="selectedDevice || 'Seleccione un dispositivo'"
                   @click="toggleDeviceDropdown" />
                 <i class="arrow" @click="toggleDeviceDropdown">&#9660;</i>
               </div>
               <ul v-if="deviceDropdownOpen" class="dropdown-menu">
-                <li v-for="device in devices" :key="device" @click="selectDevice(device)">{{ device }}
+                <li v-for="device in devices" :key="device" @click="selectDevice(device)">
+                  {{ device }}
                   <i class='bx bxs-car iconn'></i>
                 </li>
-
               </ul>
             </div>
 
@@ -53,7 +53,6 @@
               <div class="derecha">
                 <label for="start-date">Fecha inicial:</label>
               </div>
-
               <div class="centro">
                 <label for="end-date">Fecha fin:</label>
               </div>
@@ -61,50 +60,130 @@
 
             <div class="dates">
               <div class="derecha2">
-                <input type="date" name="" id="">
+                <input type="date" name="start-date" id="start-date">
               </div>
-
               <div class="centro2">
-                <input type="date" name="" id="">
+                <input type="date" name="end-date" id="end-date">
               </div>
+            </div>
+            <div class="botonR" @click="generarG">
+              <button>Generar Reportes</button>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+
+    <div class="container-graph">
+      <!-- Gráfica de barras -->
+      <div class="containerG" v-if="showGraph">
+        <Bar :data="chartData" :options="chartOptions" />
+      </div>
+
+      <!-- Gráfica de pastel -->
+      <div class="containerPie" v-if="showPieChart">
+        <Pie :data="pieChartData" :options="pieChartOptions" />
+      </div>
+    </div>
   </section>
+
 </template>
 
-<script>
-export default {
-  name: 'HomeView',
-  data() {
-    return {
-      dropdownOpen: false,
-      deviceDropdownOpen: false,
-      selectedDevice: null,
-      devices: ['RTY687', 'SJS981', 'HDS432']
-    };
+<script setup>
+import { ref } from 'vue';
+import { Bar, Pie } from 'vue-chartjs';
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js';
+
+// Registrar componentes de Chart.js
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
+const showGraph = ref(false);
+const showPieChart = ref(false);
+
+
+function generarG() {
+  showGraph.value = true;
+  showPieChart.value = true;
+}
+// Datos reactivos para la gráfica
+const chartData = ref({
+  labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
+  datasets: [
+    {
+      label: 'Ventas',
+      backgroundColor: '#42A5F5',
+      data: [40, 20, 30, 60, 90],
+    },
+  ],
+});
+
+const chartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+    },
   },
-  methods: {
-    toggleDropdown() {
-      this.dropdownOpen = !this.dropdownOpen;
+});
+
+// Datos reactivos para la gráfica de pastel
+const pieChartData = ref({
+  labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple'],
+  datasets: [
+    {
+      label: 'Distribución',
+      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+      data: [12, 19, 3, 5, 2],
     },
-    toggleDeviceDropdown() {
-      this.deviceDropdownOpen = !this.deviceDropdownOpen;
+  ],
+});
+
+const pieChartOptions = ref({
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
     },
-    selectDevice(device) {
-      this.selectedDevice = device;
-      this.deviceDropdownOpen = false;
-    }
-  }
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          let label = context.label || '';
+          if (context.parsed !== null) {
+            label += `: ${context.parsed}`;
+          }
+          return label;
+        },
+      },
+    },
+  },
+});
+
+// Datos reactivos para el menú desplegable
+const dropdownOpen = ref(false);
+const deviceDropdownOpen = ref(false);
+const selectedDevice = ref(null);
+const devices = ref(['RTY687', 'SJS981', 'HDS432']);
+
+// Métodos
+const toggleDropdown = () => {
+  dropdownOpen.value = !dropdownOpen.value;
+};
+
+const toggleDeviceDropdown = () => {
+  deviceDropdownOpen.value = !deviceDropdownOpen.value;
+};
+
+const selectDevice = (device) => {
+  selectedDevice.value = device;
+  deviceDropdownOpen.value = false;
 };
 </script>
 
 <style scoped>
 .home {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 160vh;
+
 }
 
 .home .navar {
@@ -125,6 +204,7 @@ export default {
 .crud {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .titu {
@@ -276,7 +356,7 @@ export default {
   margin-top: 20px;
   display: flex;
   align-items: center;
-  
+
 }
 
 .cruds .dates .derecha2 {
@@ -284,7 +364,7 @@ export default {
   color: var(--text-colar);
 }
 
-.cruds .dates .derecha2 input{
+.cruds .dates .derecha2 input {
   width: 360%;
   height: 40px;
   background-color: var(--body-color);
@@ -294,16 +374,16 @@ export default {
   border-radius: 4px;
 }
 
-.cruds .dates .derecha2 input[type="date"]{
+.cruds .dates .derecha2 input[type="date"] {
   color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.cruds .dates .derecha2 input[type="date"]::-webkit-calendar-picker-indicator{
+.cruds .dates .derecha2 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
-  left: 45.9%;
+  left: 46.4%;
   color: transparent;
 }
 
@@ -320,7 +400,7 @@ export default {
   color: var(--text-colar);
 }
 
-.cruds .dates .centro2 input{
+.cruds .dates .centro2 input {
   width: 330%;
   height: 40px;
   background-color: var(--body-color);
@@ -331,26 +411,60 @@ export default {
   border-radius: 4px;
 }
 
-.cruds .dates .centro2 input[type="date"]{
+.cruds .dates .centro2 input[type="date"] {
   color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.cruds .dates .centro2 input[type="date"]::-webkit-calendar-picker-indicator{
+.cruds .dates .centro2 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
-  left: 93.6%;
+  left: 94.2%;
   color: transparent;
 }
 
-.cruds .dates .centro2   input[type="date"]::after {
+.cruds .dates .centro2 input[type="date"]::after {
   content: '📅';
   padding-left: 5px;
   color: var(--text-color);
   pointer-events: none;
   z-index: 1;
-  
+
 }
 
+.botonR {
+  margin-top: 30px;
+}
+
+.botonR button {
+  padding: 12.5px 30px;
+  border: 1px solid var(--text-colar);
+  border-radius: 100px;
+  background-color: var(--body-color);
+  color: var(--text-colar);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.container-graph {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.containerG {
+  width: 40%;
+  height: 440px;
+}
+
+.containerPie {
+  width: 40%;
+  height: 440px;
+}
+.containerG canvas, .containerPie canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
 </style>
