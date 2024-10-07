@@ -67,6 +67,8 @@
 .cont .contenedor2{
     background-image: url('~@/assets/fondoL1.jpg');
     background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 100%; 
     width: 55%;
     height: 100vh;
 }
