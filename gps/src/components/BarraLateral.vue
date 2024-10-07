@@ -9,7 +9,8 @@
       <!-- Encabezado de la barra lateral -->
       <div class="image-text">
         <span class="image">
-          <img :src="require('@/assets/LP.png')" alt="">
+          <img :src="require('@/assets/LP2.png')" alt="" class="logo-claro">
+          <img :src="require('@/assets/LP.png')" alt="" class="logo-oscuro">
         </span>
 
         <div class="logo-text">
@@ -75,8 +76,8 @@
         <!-- Enlace para cerrar sesión -->
         <li>
           <router-link to="/cerrar-sesion">
-            <i class='bx bx-log-out icon'></i>
-            <span class="text nav-text">Cerrar Sesión</span>
+            <i @click="logout" class='bx bx-log-out icon'></i>
+            <span class="text nav-text" @click="logout" >Cerrar Sesión</span>
           </router-link>
         </li>
 
@@ -141,4 +142,10 @@ function closeSidebarOnClickOutside(event) {
 
 // Evento para cerrar la barra lateral al hacer clic fuera de ella
 document.addEventListener("click", closeSidebarOnClickOutside);
+
+const logout = () => {
+  // Elimina el estado de autenticación de sessionStorage y recarga la página
+  sessionStorage.removeItem('isAuthenticated');
+  window.location.reload(); // Recarga la página para mostrar el formulario de login
+};
 </script>

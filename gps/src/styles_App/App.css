@@ -14,7 +14,7 @@
     --primary-color: #232424;
     --primary-color-light: #f0f0f1;
     --toggle-color: #b4adad;
-    --text-color: #444343;
+    --text-color: #000000;
     --text-colar: rgb(0, 0, 0);
     --tran-03: all 0.2s ease;
     --tran-03: all 0.3s ease;
@@ -39,9 +39,24 @@ body.dark {
     --primary-color: #3a3b3c;
     --primary-color-light: #3a3b3c;
     --toggle-color: #fff;
-    --text-color: #ccc;
+    --text-color: #ffffff;
     --text-colar: rgb(255, 255, 255);
     --text-color-t: rgb(0, 0, 0);
+}
+
+.logo-claro {
+    display: none;
+}
+
+.logo-oscuro {
+    display: block;
+}
+body.dark .logo-claro {
+    display: block;
+}
+
+body.dark .logo-oscuro {
+    display: none;
 }
 
 
@@ -115,7 +130,7 @@ body.dark {
    
 }
 
-.sidebar header .logo-text {
+.sidebar header .logo-text { 
     display: flex;
     flex-direction: column;
 }
@@ -142,6 +157,7 @@ header .image-text .profession {
 }
 
 .sidebar header .image img {
+    margin-top: 20px;
     width: 40px;
     border-radius: 6px;
    
@@ -230,6 +246,11 @@ body.dark .sidebar li a:hover .text {
     flex-direction: column;
     justify-content: space-between;
     overflow-y: scroll;
+    
+}
+
+.sidebar .menu-bar .menu .menu-links li{
+    margin-bottom: 20px;
 }
 
 .menu-bar::-webkit-scrollbar {

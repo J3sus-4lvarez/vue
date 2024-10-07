@@ -55,15 +55,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import L from 'leaflet';
+import * as L from 'leaflet';
 import Swal from 'sweetalert2';
-import 'leaflet-draw';
-import 'leaflet-draw/dist/leaflet.draw.css';
-
+import 'leaflet/dist/leaflet.css';
+import '@geoman-io/leaflet-geoman-free';
+import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'; // Estilos de Geoman
 
 const map = ref(null);
-const drawnItems = ref(null);
-const dropdownOpen = ref(false);
+const drawnItems = ref(new L.FeatureGroup());
 const searchQuery = ref('');
 const devices = ref([
   { id: 1, name: 'Jesus Alvarez' },
@@ -74,14 +73,16 @@ const devices = ref([
 const filteredResults = ref([]);
 const selectedDevice = ref(null);
 const deviceShapes = ref({});
+const dropdownOpen = ref(false);
 
+// Función para alternar la visibilidad del dropdown
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value;
 }
 
 onMounted(() => {
-  filteredResults.value = devices.value;
-  initMap();
+  filteredResults.value = devices.value; // Inicializa la lista filtrada
+  initMap(); // Inicializa el mapa
 });
 
 const initMap = () => {
@@ -91,26 +92,24 @@ const initMap = () => {
     maxZoom: 19
   }).addTo(map.value);
 
-  drawnItems.value = new L.FeatureGroup();
-  map.value.addLayer(drawnItems.value);
+  // Añadir el grupo de elementos dibujados al mapa
+  drawnItems.value.addTo(map.value);
 
-  const drawControl = new L.Control.Draw({
-    edit: {
-      featureGroup: drawnItems.value
-    },
-    draw: {
-      polygon: true,
-      polyline: true,
-      rectangle: true,
-      circle: true,
-      marker: false
-    }
+  // Activar Geoman
+  map.value.pm.addControls({
+    position: 'topleft',
+    drawPolygon: true,
+    drawPolyline: true,
+    drawRectangle: true,
+    drawCircle: true,
+    drawMarker: false,
+    editMode: true,
+    deleteMode: true,
   });
-  map.value.addControl(drawControl);
 
-  map.value.on(L.Draw.Event.CREATED, (e) => {
-    const type = e.layerType;
-    const layer = e.layer;
+  // Evento cuando se crea una nueva geometría
+  map.value.on('pm:create', (e) => {
+    const layer = e.layer; // La capa dibujada
 
     if (!selectedDevice.value) {
       Swal.fire({
@@ -119,42 +118,98 @@ const initMap = () => {
         icon: 'warning',
         confirmButtonText: 'Cerrar'
       });
+
+      // Elimina la capa dibujada si no hay dispositivo seleccionado
+      map.value.removeLayer(layer);
       return;
     }
 
-    if (drawnItems.value) {
-      drawnItems.value.addLayer(layer);
-      storeShape(type, layer);
+    // Pregunta si el usuario quiere crear la geozona
+    Swal.fire({
+      title: 'Confirmar Creación de Geozona',
+      text: `¿Desea crear una geozona para el dispositivo ${selectedDevice.value.name}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Crear',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        drawnItems.value.addLayer(layer);
+        storeShape(layer); // Almacena la forma dibujada
 
-      Swal.fire({
-        title: 'Geozona Creada',
-        icon: 'success',
-        confirmButtonText: 'Cerrar',
-      });
-    } else {
-      console.error('drawnItems no está inicializado correctamente.');
+        Swal.fire({
+          title: 'Geozona Creada',
+          icon: 'success',
+          confirmButtonText: 'Cerrar',
+        });
+      } else {
+        // Elimina la capa dibujada si el usuario cancela
+        map.value.removeLayer(layer);
+        Swal.fire({
+          title: 'Cancelado',
+          text: 'La creación de la geozona ha sido cancelada.',
+          icon: 'info',
+          confirmButtonText: 'Cerrar',
+        });
+      }
+    });
+  });
+
+  // Evento al eliminar una geometría
+  map.value.on('pm:remove', (e) => {
+    console.log('Forma eliminada:', e.layer);
+  });
+};
+
+const storeShape = (layer) => {
+  if (!selectedDevice.value) return;
+
+  // Inicializa el array si no existe para el dispositivo seleccionado
+  if (!deviceShapes.value[selectedDevice.value.id]) {
+    deviceShapes.value[selectedDevice.value.id] = [];
+  }
+  
+  // Almacena la capa en el dispositivo correspondiente
+  deviceShapes.value[selectedDevice.value.id].push(layer);
+};
+
+const selectDevice = (device) => {
+  // Limpiar las geozonas dibujadas anteriores
+  drawnItems.value.clearLayers();
+
+  // Establecer el dispositivo seleccionado
+  selectedDevice.value = device;
+
+  // Agregar las geozonas del dispositivo seleccionado al mapa
+  if (deviceShapes.value[device.id]) {
+    deviceShapes.value[device.id].forEach(layer => {
+      drawnItems.value.addLayer(layer);
+    });
+  }
+
+  Swal.fire({
+    title: 'Dispositivo Seleccionado',
+    text: device.name,
+    confirmButtonText: 'Crear Geozona',
+    showCancelButton: true,
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isDismissed) {
+      // Si se presiona cancelar, mostrar aviso de no selección de dispositivo
+      selectedDevice.value = null;
     }
   });
 };
 
-const storeShape = (type, layer) => {
-  if (!selectedDevice.value || !deviceShapes.value[selectedDevice.value.id]) {
-    deviceShapes.value[selectedDevice.value.id] = [];
-  }
-  deviceShapes.value[selectedDevice.value.id].push({ type, layer });
-
-  displayCoordinates(type, layer);
-};
-
-const displayCoordinates = (type, layer) => {
+const displayCoordinates = (layer) => {
   let coordinates = '';
 
-  if (type === 'rectangle') {
+  if (layer instanceof L.Rectangle) {
     const bounds = layer.getBounds();
     coordinates = `NE: ${bounds.getNorthEast()}, SW: ${bounds.getSouthWest()}`;
-  } else if (type === 'circle') {
+  } else if (layer instanceof L.Circle) {
     coordinates = `Centro: ${layer.getLatLng()}, Radio: ${layer.getRadius()}`;
-  } else if (type === 'polyline' || type === 'polygon') {
+  } else if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
     coordinates = layer.getLatLngs().toString();
   }
 
@@ -185,7 +240,7 @@ const deleteLastShape = () => {
     return;
   }
 
-  const lastShape = shapesForDevice.pop().layer;
+  const lastShape = shapesForDevice.pop();
   if (lastShape) {
     map.value.removeLayer(lastShape);
     Swal.fire({
@@ -196,29 +251,22 @@ const deleteLastShape = () => {
   }
 };
 
-const selectDevice = (device) => {
-  selectedDevice.value = device;
-  Swal.fire({
-    title: 'Dispositivo Seleccionado',
-    text: device.name,
-    confirmButtonText: 'Crear Geozona',
-  });
-};
 
-function filterResults() {
+const filterResults = () => {
   const query = searchQuery.value.toLowerCase();
   filteredResults.value = devices.value.filter(item =>
     item.name.toLowerCase().includes(query)
   );
-}
+};
 </script>
+
 
 
 <style scoped>
 #map {
-  height: 690px;
-  width: 100%;
-  z-index: 1;
+  height: calc(100vh - 60px);
+  width: 100%; 
+  z-index: 0; 
 }
 
 .coordinates-table {

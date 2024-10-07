@@ -55,7 +55,7 @@
                 </path>
               </g>
             </svg>
-            <input placeholder="Search" type="search" class="input">
+            <input placeholder="Search" type="search" class="input" v-model="searchTerm">
           </div>
         </div>
 
@@ -71,7 +71,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(dispositivo, index) in dispositivos" :key="index">
+              <tr v-for="(dispositivo, index) in filteredDispositivos" :key="index">
                 <td>{{ index + 1 }}</td>
                 <td>{{ dispositivo.nombre }}</td>
                 <td>{{ dispositivo.responsable }}</td>
@@ -89,128 +89,129 @@
   </section>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
 
-export default {
-  name: 'HomeView',
-  data() {
-    return {
-      dropdownOpen: false,
-      dispositivos: [
-        { nombre: 'Jesus Alvarez', responsable: 'N/A', fechaExpiracion: '2025-06-12' },
-        { nombre: 'RTY687', responsable: 'N/A', fechaExpiracion: '2025-10-21' },
-        { nombre: 'SJS981', responsable: 'N/A', fechaExpiracion: '2026-04-10' },
-        { nombre: 'HDS432', responsable: 'N/A', fechaExpiracion: '2027-09-21' }
-      ]
-    };
-  },
-  methods: {
-    // Alternar visibilidad del dropdown
-    toggleDropdown() {
-      this.dropdownOpen = !this.dropdownOpen;
-    },
+const dropdownOpen = ref(false);
+const searchTerm = ref('');
+const dispositivos = ref([
+  { nombre: 'Jesus Alvarez', responsable: 'N/A', fechaExpiracion: '2025-06-12' },
+  { nombre: 'RTY687', responsable: 'N/A', fechaExpiracion: '2025-10-21' },
+  { nombre: 'SJS981', responsable: 'N/A', fechaExpiracion: '2026-04-10' },
+  { nombre: 'HDS432', responsable: 'N/A', fechaExpiracion: '2027-09-21' }
+]);
 
-    // Insertar un nuevo dispositivo
-    insertarDispositivo() {
-      Swal.fire({
-        title: 'Agregar Dispositivo',
-        html:
-          `<input id="nombre" class="swal2-input" placeholder="Nombre del dispositivo">
-           <input id="responsable" class="swal2-input" placeholder="Responsable">
-           <input id="fechaExpiracion" class="swal2-input" placeholder="Fecha de expiración" type="date">`,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Agregar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => {
-          const nombre = document.getElementById('nombre').value;
-          const responsable = document.getElementById('responsable').value;
-          const fechaExpiracion = document.getElementById('fechaExpiracion').value;
-          
-          if (!nombre || !responsable || !fechaExpiracion) {
-            Swal.showValidationMessage('Por favor completa todos los campos');
-          }
-          return { nombre, responsable, fechaExpiracion };
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const { nombre, responsable, fechaExpiracion } = result.value;
-          this.dispositivos.push({ nombre, responsable, fechaExpiracion });
-          
-          Swal.fire({
-            title: '¡Bien hecho!',
-            text: '¡Dispositivo agregado correctamente!',
-            icon: 'success'
-          });
-        }
-      });
-    },
-    
-    // Editar un dispositivo existente
-    editarDispositivo(index) {
-      const dispositivo = this.dispositivos[index];
+// Computed property para filtrar los dispositivos
+const filteredDispositivos = computed(() => {
+  return dispositivos.value.filter(dispositivo =>
+    dispositivo.nombre.toLowerCase().includes(searchTerm.value.toLowerCase())
+  );
+});
 
-      Swal.fire({
-        title: 'Editar Dispositivo',
-        html:
-          `<input id="nombre" class="swal2-input" placeholder="Nombre del dispositivo" value="${dispositivo.nombre}">
-           <input id="responsable" class="swal2-input" placeholder="Responsable" value="${dispositivo.responsable}">
-           <input id="fechaExpiracion" class="swal2-input" placeholder="Fecha de expiración" type="date" value="${dispositivo.fechaExpiracion}">`,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Guardar cambios',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => {
-          const nombre = document.getElementById('nombre').value;
-          const responsable = document.getElementById('responsable').value;
-          const fechaExpiracion = document.getElementById('fechaExpiracion').value;
-          
-          if (!nombre || !responsable || !fechaExpiracion) {
-            Swal.showValidationMessage('Por favor completa todos los campos');
-          }
-          
-          return { nombre, responsable, fechaExpiracion };
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const { nombre, responsable, fechaExpiracion } = result.value;
-          this.dispositivos[index] = { nombre, responsable, fechaExpiracion };
-            
-          Swal.fire({
-            title: '¡Bien hecho!',
-            text: '¡Dispositivo editado correctamente!',
-            icon: 'success'
-          });
-        }
-      });
-    },
+// Alternar visibilidad del dropdown
+const toggleDropdown = () => {
+  dropdownOpen.value = !dropdownOpen.value;
+};
 
-    // Eliminar un dispositivo
-    eliminarDispositivo(index) {
+// Insertar un nuevo dispositivo
+const insertarDispositivo = () => {
+  Swal.fire({
+    title: 'Agregar Dispositivo',
+    html:
+      `<input id="nombre" class="swal2-input" placeholder="Nombre del dispositivo">
+       <input id="responsable" class="swal2-input" placeholder="Responsable">
+       <input id="fechaExpiracion" class="swal2-input" placeholder="Fecha de expiración" type="date">`,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Agregar',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('nombre').value;
+      const responsable = document.getElementById('responsable').value;
+      const fechaExpiracion = document.getElementById('fechaExpiracion').value;
+      
+      if (!nombre || !responsable || !fechaExpiracion) {
+        Swal.showValidationMessage('Por favor completa todos los campos');
+      }
+      return { nombre, responsable, fechaExpiracion };
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const { nombre, responsable, fechaExpiracion } = result.value;
+      dispositivos.value.push({ nombre, responsable, fechaExpiracion });
+      
       Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'No podrás revertir esta acción',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.dispositivos.splice(index, 1);
-          Swal.fire(
-            '¡Eliminado!',
-            'El dispositivo ha sido eliminado.',
-            'success'
-          );
-        }
+        title: '¡Bien hecho!',
+        text: '¡Dispositivo agregado correctamente!',
+        icon: 'success'
       });
     }
-  }
+  });
+};
+
+// Editar un dispositivo existente
+const editarDispositivo = (index) => {
+  const dispositivo = dispositivos.value[index];
+
+  Swal.fire({
+    title: 'Editar Dispositivo',
+    html:
+      `<input id="nombre" class="swal2-input" placeholder="Nombre del dispositivo" value="${dispositivo.nombre}">
+       <input id="responsable" class="swal2-input" placeholder="Responsable" value="${dispositivo.responsable}">
+       <input id="fechaExpiracion" class="swal2-input" placeholder="Fecha de expiración" type="date" value="${dispositivo.fechaExpiracion}">`,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('nombre').value;
+      const responsable = document.getElementById('responsable').value;
+      const fechaExpiracion = document.getElementById('fechaExpiracion').value;
+      
+      if (!nombre || !responsable || !fechaExpiracion) {
+        Swal.showValidationMessage('Por favor completa todos los campos');
+      }
+      
+      return { nombre, responsable, fechaExpiracion };
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const { nombre, responsable, fechaExpiracion } = result.value;
+      dispositivos.value[index] = { nombre, responsable, fechaExpiracion };
+        
+      Swal.fire({
+        title: '¡Bien hecho!',
+        text: '¡Dispositivo editado correctamente!',
+        icon: 'success'
+      });
+    }
+  });
+};
+
+// Eliminar un dispositivo
+const eliminarDispositivo = (index) => {
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'No podrás revertir esta acción.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      dispositivos.value.splice(index, 1);
+      
+      Swal.fire(
+        '¡Eliminado!',
+        'El dispositivo ha sido eliminado.',
+        'success'
+      );
+    }
+  });
 };
 </script>
+
 
 
 <style scoped>

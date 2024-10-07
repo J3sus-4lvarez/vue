@@ -213,8 +213,9 @@ onMounted(() => {
 
 <style scoped>
 .map-container {
-  height: 690px;
-  z-index: 1;
+  height: calc(100vh - 60px);
+  width: 100%; 
+  z-index: 0; 
 }
 
 

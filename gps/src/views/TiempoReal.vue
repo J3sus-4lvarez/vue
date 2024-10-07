@@ -66,6 +66,7 @@ function initMap() {
   const mapOptions = {
     center: colombia,
     zoom: 12.4
+    
   };
   
   // Crear el objeto de mapa de Leaflet
@@ -143,10 +144,9 @@ onMounted(() => {
 
 <style scoped>
 .map-container {
-  height: 690px; 
+  height: calc(100vh - 60px);
   width: 100%; 
-  position: relative; 
-  z-index: 1;
+  z-index: 0; 
 }
 
 .home {
@@ -159,6 +159,7 @@ onMounted(() => {
   background-color: var(--sidebar-color);
   border-bottom: 3px solid var(--body-color);
   z-index: 2; 
+ 
 }
 
 .home .navar,

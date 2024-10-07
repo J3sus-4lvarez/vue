@@ -60,10 +60,10 @@
 
             <div class="dates">
               <div class="derecha2">
-                <input type="date" name="start-date" id="start-date">
+                <input type="text" id="start-date" ref="startDatePicker" placeholder="yy/mm/dd" />
               </div>
               <div class="centro2">
-                <input type="date" name="end-date" id="end-date">
+                <input type="text" id="end-date" ref="endDatePicker" placeholder="yy/mm/dd" />
               </div>
             </div>
             <div class="botonR" @click="generarG">
@@ -91,20 +91,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Bar, Pie } from 'vue-chartjs';
+import Swal from 'sweetalert2';
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.css";
+
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js';
 
 // Registrar componentes de Chart.js
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
+
 const showGraph = ref(false);
 const showPieChart = ref(false);
+const startDatePicker = ref(null);
+const endDatePicker = ref(null);  
 
 
 function generarG() {
+
+  const startDate = document.getElementById('start-date').value;
+  const endDate = document.getElementById('end-date').value;
+
+  if (!selectedDevice.value) {
+    Swal.fire({
+      title: "Error",
+      text: "Por favor, seleccione un dispositivo.",
+      icon: "warning"
+    });
+    return;
+  }
+
+  if (!startDate || !endDate) {
+    Swal.fire({
+      title: "Error",
+      text: "Por favor, seleccione ambas fechas.",
+      icon: "warning"
+    });
+    return;
+  }
+
   showGraph.value = true;
   showPieChart.value = true;
 }
+
 // Datos reactivos para la gráfica
 const chartData = ref({
   labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
@@ -121,8 +151,23 @@ const chartOptions = ref({
   responsive: true,
   maintainAspectRatio: false,
   scales: {
+    x: {
+      ticks: {
+        color: '#000000',
+      },
+    },
     y: {
       beginAtZero: true,
+      ticks: {
+        color: '#000000',
+      },
+    },
+  },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#000000',
+      },
     },
   },
 });
@@ -144,7 +189,11 @@ const pieChartOptions = ref({
   plugins: {
     legend: {
       position: 'top',
+      labels: {
+        color: '#000000',
+      },
     },
+
     tooltip: {
       callbacks: {
         label: function (context) {
@@ -178,6 +227,16 @@ const selectDevice = (device) => {
   selectedDevice.value = device;
   deviceDropdownOpen.value = false;
 };
+
+onMounted(() => {
+  flatpickr(startDatePicker.value, {
+    dateFormat: "Y-m-d",
+  });
+  flatpickr(endDatePicker.value, {
+    dateFormat: "Y-m-d",
+  });
+});
+
 </script>
 
 <style scoped>
@@ -352,11 +411,32 @@ const selectDevice = (device) => {
   color: var(--text-colar);
 }
 
+.cruds .dates input{
+  width: 100%;
+  padding: 10px;
+  cursor: pointer; 
+}
+
 .cruds .dates {
   margin-top: 20px;
   display: flex;
   align-items: center;
+  width: 100%;
 
+}
+
+
+.arrow {
+  pointer-events: none;
+}
+
+.cruds .dates ::placeholder{
+  color: var(--text-colar);
+  font-weight: 200;
+}
+
+.cruds .dates input{
+  color: var(--text-colar);
 }
 
 .cruds .dates .derecha2 {
@@ -365,34 +445,13 @@ const selectDevice = (device) => {
 }
 
 .cruds .dates .derecha2 input {
-  width: 360%;
+  width: 280%;
   height: 40px;
   background-color: var(--body-color);
   border: none;
   padding: 20px;
   border: 1px solid var(--text-colar);
   border-radius: 4px;
-}
-
-.cruds .dates .derecha2 input[type="date"] {
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.cruds .dates .derecha2 input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  left: 46.4%;
-  color: transparent;
-}
-
-.cruds .dates .derecha2 input[type="date"]::after {
-  content: '📅';
-  padding-left: 5px;
-  color: var(--text-color);
-  pointer-events: none;
-  z-index: 1;
 }
 
 .cruds .dates .centro2 {
@@ -401,36 +460,15 @@ const selectDevice = (device) => {
 }
 
 .cruds .dates .centro2 input {
-  width: 330%;
+  width: 280%;
   height: 40px;
   background-color: var(--body-color);
   border: none;
   padding: 20px;
   margin-left: 20px;
+  margin-right: -19.5px;
   border: 1px solid var(--text-colar);
   border-radius: 4px;
-}
-
-.cruds .dates .centro2 input[type="date"] {
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.cruds .dates .centro2 input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  left: 94.2%;
-  color: transparent;
-}
-
-.cruds .dates .centro2 input[type="date"]::after {
-  content: '📅';
-  padding-left: 5px;
-  color: var(--text-color);
-  pointer-events: none;
-  z-index: 1;
-
 }
 
 .botonR {
@@ -459,10 +497,12 @@ const selectDevice = (device) => {
 }
 
 .containerPie {
-  width: 40%;
+  width: 32%;
   height: 440px;
 }
-.containerG canvas, .containerPie canvas {
+
+.containerG canvas,
+.containerPie canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
