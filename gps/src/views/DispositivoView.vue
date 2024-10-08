@@ -13,17 +13,13 @@
             <i class='bx bx-cog confi'></i> Settings
           </button>
           <div class="dropdown-content" :class="{ 'show': dropdownOpen }">
-            <a href="#"><i class='bx bx-user-circle iconsub'></i> Profile</a>
+            <a href="#"><i class='bx bx-user-circle iconsub'></i> Perfil</a>
             <a href="#"><i class='bx bx-lock-alt iconsub'></i> Contraseña</a>
             <a href="#"><i class='bx bx-bell iconsub'></i> Notificaciones</a>
             <a href="#"><i class='bx bx-user-x iconsub'></i> Privacidad</a>
           </div>
         </div>
       </div>
-    </div>
-    <div>
-      jesus me la chupa con nutela 
-      y jesus le desnutrio la vrg a juanchi :)
     </div>
 
     <div class="crud">

@@ -8,7 +8,7 @@
 
             <div class="formu">
                 <form class="box" @submit.prevent="login">
-                    <h1 ref="typedText" class="typed-text"></h1>
+                    <h1 class="typed-text">{{ displayText }}</h1>
                     <input type="text" v-model="email" placeholder="Email" required>
                     <input type="password" v-model="password" placeholder="Password" required> 
                     <input type="submit" value="Iniciar Sesion" class="btn1">
@@ -32,13 +32,12 @@ const emit = defineEmits(['loginSuccess']);
 
 const email = ref('');
 const password = ref('');
-const typedText = ref(null);
+const displayText = ref(''); // Cambiamos a usar una propiedad reactiva
 const text = "Iniciar sesión en Navify GPS"; 
 let index = 0; 
 
 const login = () => {
     if (email.value === '1' && password.value === '1') {
-        // Guardar el estado de autenticación en sessionStorage
         sessionStorage.setItem('isAuthenticated', 'true');
         emit('loginSuccess');
     } else {
@@ -51,18 +50,16 @@ const login = () => {
 };
 
 const typeWriter = () => {
-  if (typedText.value) {
-    if (index < text.length) {
-      typedText.value.innerHTML += text.charAt(index);
-      index++;
-      setTimeout(typeWriter, 100); 
-    } else {
-      setTimeout(() => {
-        typedText.value.innerHTML = ""; 
-        index = 0;
-        typeWriter();
-      }, 5000);
-    }
+  if (index < text.length) {
+    displayText.value += text.charAt(index); // Cambiamos el innerHTML por displayText
+    index++;
+    setTimeout(typeWriter, 100); 
+  } else {
+    setTimeout(() => {
+      displayText.value = ""; // Reiniciamos displayText en lugar de innerHTML
+      index = 0;
+      typeWriter();
+    }, 5000);
   }
 };
 
@@ -70,3 +67,4 @@ onMounted(() => {
   typeWriter();
 });
 </script>
+

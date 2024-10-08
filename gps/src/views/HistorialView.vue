@@ -62,7 +62,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Swal from 'sweetalert2';
-import L from 'leaflet'; // Importa Leaflet
+import L from 'leaflet';
 import gpsIcon from '@/assets/gps.png';
 
 let map;
