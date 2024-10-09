@@ -21,11 +21,7 @@
         </div>
       </div>
     </div>
-    <div>
-      jesus me la chupa con nutela 
-      y jesus le desnutrio la vrg a juanchi :)
-    </div>
-
+   
     <div class="crud">
       <div class="titu">
         <h1><i class='bx bx-car icoon'></i>Mis Dispositivos</h1>
@@ -96,6 +92,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const dropdownOpen = ref(false);
 const searchTerm = ref('');

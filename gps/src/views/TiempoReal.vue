@@ -5,9 +5,7 @@
       <div class="text">
         <h1 class="titulo">Navify</h1>
       </div>
-
       <div class="actions">
-        <!-- Menú desplegable de configuración -->
         <div class="dropdown">
           <button class="dropbtn" @click="toggleDropdown">
             <i class='bx bx-cog confi'></i> Settings
@@ -24,7 +22,8 @@
 
     <div class="tituloo">
       <div class="hone">
-        <h1>Lista de Dispositivo</h1>
+        <h1>Lista de Dispositivos</h1>
+        <button @click="addDevice">Enviar ubicación</button> <!-- Botón para enviar ubicación -->
         <div class="group">
           <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
             <g>
@@ -33,14 +32,12 @@
               </path>
             </g>
           </svg>
-          <input placeholder="Search" type="search" class="input" v-model="searchQuery" @input="filterResults">
+          <input placeholder="Buscar" type="search" class="input" v-model="searchQuery" @input="filterResults">
         </div>
         <ul class="device-list">
-          <router-link to="#" style="text-decoration: none;">
-            <li @click="showAlert(item)" v-for="item in filteredResults" :key="item.id">{{ item.name }}
-              <i class='bx bxs-car icon'></i>
-            </li>
-          </router-link>
+          <li v-for="item in filteredResults" :key="item.id" @click="showAlert(item)">
+            {{ item.name }} <i class='bx bxs-car icon'></i>
+          </li>
         </ul>
       </div>
 
@@ -57,26 +54,24 @@
 import { ref, onMounted } from 'vue';
 import Swal from 'sweetalert2';
 import L from 'leaflet'; 
+import { io } from 'socket.io-client';
+const socket = io('https://ee36-181-204-106-98.ngrok-free.app/enviarUbicacion');
 
 let map;
 
-// Función para inicializar el mapa con Leaflet
+// Inicializa el mapa con Leaflet
 function initMap() {
-  var colombia = { lat: 10.9685, lng: -74.7813 };
+  const colombia = { lat: 10.9685, lng: -74.7813 };
   const mapOptions = {
     center: colombia,
     zoom: 12.4
-    
   };
   
-  // Crear el objeto de mapa de Leaflet
   map = L.map('map').setView([colombia.lat, colombia.lng], mapOptions.zoom);
 
-  // Agregar una capa de mapa
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-
 }
 
 // Función para alternar la visibilidad del dropdown
@@ -94,8 +89,8 @@ function filterResults() {
 
 // Función para mostrar la ubicación del dispositivo seleccionado en el mapa
 function showDeviceOnMap(device) {
-  map.setView([device.lat, device.lng],18);
-
+  map.setView([device.lat, device.lng], 18);
+  
   L.marker([device.lat, device.lng]).addTo(map)
     .bindPopup(`<b>${device.name}</b><br>Latitud: ${device.lat}<br>Longitud: ${device.lng}<br>Velocidad: ${device.speed} km/h<br>Kilometraje: ${device.km} km`)
     .openPopup();
@@ -122,6 +117,39 @@ const showAlert = (item) => {
   });
 };
 
+// Función para agregar un nuevo dispositivo con la ubicación actual
+
+// Asegúrate de que esta función se ejecute correctamente al presionar el botón en el celular
+
+
+const addDevice = () => {
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const newDevice = {
+        id: devices.value.length + 1,
+        name: `Nuevo Dispositivo ${devices.value.length + 1}`,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        speed: 0,
+        km: 0
+      };
+
+      devices.value.push(newDevice);
+      filteredResults.value.push(newDevice);
+
+      // Cambia el nombre del evento a 'device-location'
+      socket.emit('device-location', newDevice);
+      console.log('Nuevo dispositivo agregado:', newDevice);
+    },
+    (error) => {
+      console.error('Error al obtener la ubicación:', error);
+    }
+  );
+};
+
+
+
+
 // Variables reactivas para manejar el estado del dropdown y la búsqueda
 const dropdownOpen = ref(false);
 const searchQuery = ref('');
@@ -130,14 +158,12 @@ const devices = ref([
   { id: 2, name: 'RTY687', lat: 10.9870, lng: -74.7850, speed: 50, km: 850 },
   { id: 3, name: 'SJS981', lat: 10.9880, lng: -74.7860, speed: 70, km: 900 },
   { id: 4, name: 'HDS432', lat: 10.9890, lng: -74.7870, speed: 55, km: 1100 },
-  // Agrega más dispositivos según sea necesario
 ]);
 const filteredResults = ref([]);
 
-// Inicializar los resultados filtrados y el mapa al montar el componente
 onMounted(() => {
-  filteredResults.value = devices.value;
   initMap();
+  filterResults(); // Inicializar la lista filtrada
 });
 </script>
 
@@ -159,7 +185,6 @@ onMounted(() => {
   background-color: var(--sidebar-color);
   border-bottom: 3px solid var(--body-color);
   z-index: 2; 
- 
 }
 
 .home .navar,
@@ -222,50 +247,49 @@ onMounted(() => {
   justify-content: center;
   position: relative;
   max-width: 250px;
-  margin-top: 10px;
-}
-
-.input {
-  width: 100%;
-  height: 40px;
-  line-height: 28px;
-  padding: 0 1rem;
-  padding-left: 2.5rem;
-  border: 2px solid;
-  border-radius: 8px;
-  outline: none;
-  background-color: var(--body-color);
-  color: var(--text-color);
-  transition: .3s ease;
-}
-
-.input::placeholder {
-  color: var(--text-color);
+  margin-top: 20px;
+  margin-left: 10px;
 }
 
 .icon {
   position: absolute;
-  left: 1rem;
-  fill: var(--text-color);
-  width: 1rem;
-  height: 1rem;
-  font-size: 21px;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  fill: #444;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 10px 10px 38px;
+  font-size: 15px;
+  color: #444;
+  background: #eef1f6;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
 }
 
 .device-list {
   list-style: none;
   padding: 0;
-  margin: 20px;
+  margin: 10px;
 }
 
 .device-list li {
+  font-size: 14px;
   color: var(--text-color);
-  padding: 5px 0;
-  font-size: 15px;
-  font-weight: 500;
   display: flex;
-  margin-left: 20px;
- 
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.device-list li:hover {
+  background-color: var(--hover-color);
 }
 </style>
-

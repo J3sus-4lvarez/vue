@@ -5,7 +5,7 @@
 
     <!-- Barra de navegación -->
     <div class="navar" style="background-color: var(--sidebar-color);
-                               border-bottom: 3px solid var(--body-color);">
+    border-bottom: 3px solid var(--body-color);">
       <div class="text">
         <h1 class="titulo">Navify</h1>
       </div>
