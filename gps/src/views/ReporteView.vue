@@ -59,12 +59,8 @@
             </div>
 
             <div class="dates">
-              <div class="derecha2">
-                <input type="text" id="start-date" ref="startDatePicker" placeholder="yy/mm/dd" />
-              </div>
-              <div class="centro2">
+                <input type="text" id="start-date" ref="startDatePicker" placeholder="yy/mm/dd" class="input1">
                 <input type="text" id="end-date" ref="endDatePicker" placeholder="yy/mm/dd" />
-              </div>
             </div>
             <div class="botonR" @click="generarG">
               <button>Generar Reportes</button>
@@ -415,6 +411,14 @@ onMounted(() => {
   width: 100%;
   padding: 10px;
   cursor: pointer; 
+  background-color: var(--sidebar-color);
+  border: none;
+  border: 1px solid var(--text-colar);
+  border-radius: 5px;
+}
+
+.cruds .dates .input1{
+  margin-right: 15px; 
 }
 
 .cruds .dates {
@@ -422,9 +426,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   width: 100%;
-
 }
-
 
 .arrow {
   pointer-events: none;
@@ -432,44 +434,9 @@ onMounted(() => {
 
 .cruds .dates ::placeholder{
   color: var(--text-colar);
-  font-weight: 200;
+  font-weight: 300;
 }
 
-.cruds .dates input{
-  color: var(--text-colar);
-}
-
-.cruds .dates .derecha2 {
-  margin-left: 0 auto;
-  color: var(--text-colar);
-}
-
-.cruds .dates .derecha2 input {
-  width: 280%;
-  height: 40px;
-  background-color: var(--body-color);
-  border: none;
-  padding: 20px;
-  border: 1px solid var(--text-colar);
-  border-radius: 4px;
-}
-
-.cruds .dates .centro2 {
-  margin: 0 auto;
-  color: var(--text-colar);
-}
-
-.cruds .dates .centro2 input {
-  width: 280%;
-  height: 40px;
-  background-color: var(--body-color);
-  border: none;
-  padding: 20px;
-  margin-left: 20px;
-  margin-right: -19.5px;
-  border: 1px solid var(--text-colar);
-  border-radius: 4px;
-}
 
 .botonR {
   margin-top: 30px;

@@ -21,10 +21,7 @@
         </div>
       </div>
     </div>
-    <div>
-      jesus me la chupa con nutela 
-      y jesus le desnutrio la vrg a juanchi :)
-    </div>
+  
 
     <div class="crud">
       <div class="titu">
@@ -286,18 +283,14 @@ const eliminarDispositivo = (index) => {
   padding: 0.5em 1.4em;
   color: var(--text-colar);
   background: var(--body-color);
-  border: 1px solid;
-  border-radius: 20em;
+  border: 2px solid;
+  border-radius: 5px;
   cursor: pointer;
   transition: box-shadow 0.3s ease;
 }
 
 .cssbuttons-io-button button svg {
   margin-right: 6px;
-}
-
-.cssbuttons-io-button button:hover {
-  box-shadow: 0 0.5em 1.5em -0.5em #d5010198;
 }
 
 .cssbuttons-io-button button:active {

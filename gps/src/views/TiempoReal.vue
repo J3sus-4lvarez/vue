@@ -55,7 +55,7 @@ import { ref, onMounted } from 'vue';
 import Swal from 'sweetalert2';
 import L from 'leaflet'; 
 import { io } from 'socket.io-client';
-const socket = io('https://ee36-181-204-106-98.ngrok-free.app/enviarUbicacion');
+const socket = io('hhttps://9196-191-95-32-181.ngrok-free.app/enviarUbicacion');
 
 let map;
 

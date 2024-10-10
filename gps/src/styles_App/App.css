@@ -20,6 +20,7 @@
     --tran-03: all 0.3s ease;
     --tran-04: all 0.3s ease;
     --tran-05: all 0.3s ease;
+    --text-color-boton: #ffffff;
 }
 
 body {
@@ -41,7 +42,7 @@ body.dark {
     --toggle-color: #fff;
     --text-color: #ffffff;
     --text-colar: rgb(255, 255, 255);
-    --text-color-t: rgb(0, 0, 0);
+    --text-color-boton: #000000;
 }
 
 .logo-claro {
