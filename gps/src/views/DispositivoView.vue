@@ -5,7 +5,7 @@
       <div class="text">
         <h1 class="titulo">Navify</h1>
       </div>
-
+f
       <div class="actions">
         <!-- Menú desplegable de configuración -->
         <div class="dropdown">
@@ -21,10 +21,7 @@
         </div>
       </div>
     </div>
-    <div>
-      jesus me la chupa con nutela 
-      y jesus le desnutrio la vrg a juanchi :)
-    </div>
+ 
 
     <div class="crud">
       <div class="titu">
